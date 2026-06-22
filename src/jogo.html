@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>TraceLogic - OnGame</title>
+    <link rel="icon" type="image/png" href="assets/icons/tracelogic.png">
+
+    <script src="https://unpkg.com/blockly@10.4.3/blockly.min.js"></script>
+    <script src="https://unpkg.com/blockly@10.4.3/blocks.min.js"></script>
+    <script src="https://unpkg.com/blockly@10.4.3/javascript.min.js"></script>
+
+    <link rel="stylesheet" href="./css/jogo.css">
+    <link rel="stylesheet" href="./css/toolbar.css">
+    <link rel="stylesheet" href="./css/tutorial.css">
+    <link rel="stylesheet" href="./css/check.css">
+
+    <script src="./js/tutorial/tutorialPages.js"></script>
+    <script src="./js/tutorial/tutorial.js"></script>
+    <script src="./js/blocos.js"></script>
+    <script src="./js/toolboxes.js"></script>
+    <script src="./js/fases.js"></script>
+
+
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <div id="canvasZone">
+
+            <div class="canvasCard">
+
+                <div class="tituloCanvas">
+                    Seu Desenho
+                </div>
+
+                <canvas id="canvasUser" width="400" height="400"></canvas>
+
+            </div>
+
+            <div class="canvasCard">
+
+                <div class="tituloCanvas">
+                    Desenho de Referência
+                </div>
+
+                <canvas id="canvasRef" width="400" height="400"></canvas>
+
+            </div>
+
+        </div>
+        
+        <div class="toolbar">
+            <button id="btnRun" onclick="runCode()">
+                <img src="assets/icons/play.png">
+                <span class="tooltip">Executar Código</span>
+            </button>
+
+            <button id="btnCheck" onclick="enviarResposta()" disabled>
+                <img src="assets/icons/check.png">
+                <span class="tooltip">Enviar Resposta</span>
+            </button>
+
+            <button id="btnSave" onclick="saveWorkspace()" disabled>
+                <img src="assets/icons/save.png">
+                <span class="tooltip">Salvar Blocos</span>
+            </button>
+            
+            <button id="btnLoad" onclick="loadWorkspace()">
+                <img src="assets/icons/load.png">
+                <span class="tooltip">Carregar Blocos</span>
+            </button>
+            <input type="file" id="loadFile" accept=".json" style="display:none" onchange="handleFileLoad(event)">
+
+            <button id="btnHelp" onclick="Tutorial.reabrir()">
+                <img src="assets/icons/help.png">
+                <span class="tooltip">Ajuda</span>
+            </button>
+        </div>
+        
+        <div id="blocklyDiv"></div>
+        
+    </div>
+
+    <div id="tutorialModal" class="modal">
+
+        <div class="modal-content">
+            <button id="btnCloseTutorial">
+                ✖
+            </button>
+
+            <div id="tutorialPage"></div>
+
+            <div class="tutorial-nav">
+                <button id="btnPrevTutorial">
+                    ◀ Anterior
+                </button>
+
+                <span id="tutorialCounter"></span>
+
+                <button id="btnNextTutorial">
+                    Próximo ▶
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultModal" class="modal">
+
+        <div class="modal-content">
+            <h2 id="resultTitle"></h2>
+
+            <p id="resultMessage"></p>
+
+            <div id="resultPercent"></div>
+
+            <div id="resultButtons">
+                <button id="btnNextPhase">
+                    Próxima Fase
+                </button>
+                
+                <button id="btnSelectPhase" onclick="window.location.href = 'seletor.html'">
+                    Seleção de Fases
+                </button>
+
+                <button id="btnContinue">
+                    Voltar para Fase
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+
+var workspace = Blockly.inject(
+    'blocklyDiv',
+    {
+        toolbox: '<xml></xml>'
+    }
+);
+
+workspace.addChangeListener(function(event) {
+    
+    if (
+        event.type === Blockly.Events.BLOCK_CHANGE ||
+        event.type === Blockly.Events.BLOCK_CREATE ||
+        event.type === Blockly.Events.BLOCK_DELETE ||
+        event.type === Blockly.Events.BLOCK_MOVE
+    ) {
+        codigoExecutado = false;
+        desenhoInvalido = false;
+
+        btnCheck.disabled = true;
+        btnSave.disabled = true;
+    }
+});
+
+
+/* -----------------------
+   4. LÓGICA DO CANVAS
+--------------------------*/
+const canvasUser = document.getElementById("canvasUser");
+const canvasRef = document.getElementById("canvasRef");
+
+const ctxUser = canvasUser.getContext("2d");
+const ctxRef = canvasRef.getContext("2d");
+
+// nível de zoom (aumenta o tamanho visível dos passos)
+const ZOOM = canvasUser.width / 20;
+
+// posição inicial
+const user = {
+    x: canvasUser.width / 2,
+    y: canvasUser.height / 2,
+    DRAW: false,
+    ctx: ctxUser,
+    edges: new Set()
+};
+
+const ref = {
+    x: canvasRef.width / 2,
+    y: canvasRef.height / 2,
+    DRAW: false,
+    ctx: ctxRef,
+    edges: new Set()
+};
+
+let fase = null;
+
+// const ponteiroImg = new Image();
+// ponteiroImg.src = "assets/ponteiro.png";
+
+resetCanva(user, canvasUser);
+resetCanva(ref, canvasRef);
+
+ctxUser.lineWidth = 2;
+ctxRef.lineWidth = 2;
+let codigoExecutado = false;
+let desenhoInvalido = false;
+
+const btnCheck = document.getElementById("btnCheck");
+const btnSave = document.getElementById("btnSave");
+
+function drawPointer(aux) {
+
+    aux.ctx.fillStyle = "black";
+
+    aux.ctx.beginPath();
+
+    aux.ctx.arc(
+        aux.x,
+        aux.y,
+        4,
+        0,
+        Math.PI * 2
+    );
+
+    aux.ctx.fill();
+}
+
+function resetCanva(aux, canvas) {
+
+    aux.x = canvas.width / 2;
+    aux.y = canvas.height / 2;
+    aux.DRAW = false;
+
+    aux.edges = new Set();
+}
+
+function addEdge(aux, x1, y1, x2, y2) {
+
+    // normaliza a direção
+    const a = `${x1},${y1}`;
+    const b = `${x2},${y2}`;
+
+    const key =
+        (a < b)
+            ? `${a}|${b}`
+            : `${b}|${a}`;
+
+    aux.edges.add(key);
+}
+
+function compareEdges() {
+
+    if (
+        user.edges.size !==
+        ref.edges.size
+    ) { return false; }
+
+    for (const edge of user.edges) {
+        if (!ref.edges.has(edge)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function move(dir, steps) {
+    moveInternal(dir, steps, AUX);
+}
+
+function moveInternal(dir, steps, aux) {
+
+    let oldX = aux.x;
+    let oldY = aux.y;
+
+    // posição na grade ANTES de mover
+    const startCol = Math.round(aux.x / ZOOM);
+    const startRow = Math.round(aux.y / ZOOM);
+
+    const dist = steps * ZOOM;
+
+    if (dir === "UP")    aux.y -= dist;
+    if (dir === "DOWN")  aux.y += dist;
+    if (dir === "LEFT")  aux.x -= dist;
+    if (dir === "RIGHT") aux.x += dist;
+
+    if (!estaDentroDoCanvas(aux)) {
+        desenhoInvalido = true;
+        aux.ctx.strokeStyle = "red";
+    }
+
+    // posição na grade DEPOIS de mover
+    const endCol = Math.round(aux.x / ZOOM);
+    const endRow = Math.round(aux.y / ZOOM);
+
+    if (aux.DRAW) {
+
+        let c = startCol;
+        let r = startRow;
+
+        while (
+            c !== endCol ||
+            r !== endRow
+        ) {
+
+            let nextC = c;
+            let nextR = r;
+
+            if (dir === "UP")
+                nextR--;
+
+            if (dir === "DOWN")
+                nextR++;
+
+            if (dir === "LEFT")
+                nextC--;
+
+            if (dir === "RIGHT")
+                nextC++;
+
+            addEdge(
+                aux,
+                c,
+                r,
+                nextC,
+                nextR
+            );
+
+            c = nextC;
+            r = nextR;
+        }
+
+        // desenho visual continua existindo
+        aux.ctx.beginPath();
+        aux.ctx.moveTo(oldX, oldY);
+        aux.ctx.lineTo(aux.x, aux.y);
+        aux.ctx.stroke();
+    }
+}
+
+function drawGrid(quadro, ctx) {
+    const W = quadro.width;
+    const H = quadro.height;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid visual
+    ctx.strokeStyle = "#ddd";
+    ctx.lineWidth = 1;
+
+    // Linhas verticais
+    for (let x = 0; x <= W; x += ZOOM) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+    }
+
+    // Linhas horizontais
+    for (let y = 0; y <= H; y += ZOOM) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+    }
+
+    // --- Coordenadas internas ---
+    const cols = W / ZOOM;
+    const rows = H / ZOOM;
+
+    ctx.fillStyle = "black";
+    ctx.font = "12px Arial";
+
+    // Eixo X (embaixo)
+    for (let c = 0; c <= cols; c++) {
+        const xPos = c * ZOOM;
+        ctx.fillText(c, xPos + 2, H - 4);  
+    }
+
+    // Eixo Y (à esquerda, mas orientado: 0 embaixo → valores crescem p/ cima)
+    for (let r = 0; r <= rows; r++) {
+        const yPos = H - r * ZOOM; 
+        ctx.fillText(r, 2, yPos - 4);
+    }
+
+    // Restaura aparência do traço para o desenho
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+}
+
+function estaDentroDoCanvas(aux) {
+
+    return (
+        aux.x >= 0 &&
+        aux.x <= aux.ctx.canvas.width &&
+        aux.y >= 0 &&
+        aux.y <= aux.ctx.canvas.height
+    );
+}
+
+function saveWorkspace() {
+    if (!codigoExecutado) { alert("Execute o desenho antes de salvar."); return; }
+    if (desenhoInvalido) { alert("Não é possível salvar um desenho inválido."); return; }
+
+    const json = Blockly.serialization.workspaces.save(workspace);
+    const dataStr = JSON.stringify(json, null, 2);
+    
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "save_blocos.json";
+    a.click();
+    
+    URL.revokeObjectURL(url);
+
+    alteracoesPendentes = false;
+    btnSave.disabled = true;
+}
+
+function loadWorkspace() {
+    document.getElementById("loadFile").click();
+}
+
+function handleFileLoad(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            Blockly.Events.disable();
+
+            const json = JSON.parse(e.target.result);
+            workspace.clear();
+            Blockly.serialization.workspaces.load(json, workspace);
+            
+            codigoExecutado = false;
+            desenhoInvalido = false;
+
+            btnCheck.disabled = true;
+            btnSave.disabled = true;
+
+            alert("Blocos carregados com sucesso!");
+        } catch (error) {
+            alert("Erro ao carregar JSON ou formato inválido.");
+            console.error(error);
+        } finally {
+            Blockly.Events.enable();
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+async function carregarFaseDoStorage() {
+
+    const faseJSON = localStorage.getItem("faseAtual");
+
+    if (!faseJSON) {
+        alert("Nenhuma fase selecionada.");
+        return;
+    }
+
+    fase = JSON.parse(faseJSON);
+
+    carregarToolbox(fase.toolbox);
+
+    Tutorial.abrir(
+        fase.tutorial.inicio,
+        fase.tutorial.fim
+    );
+  
+    await carregarReferencia(
+        fase.arquivoReferencia
+    );
+}
+
+function carregarToolbox(nomeToolbox) {
+
+    const toolbox = TOOLBOXES[nomeToolbox];
+
+    if (!toolbox) {
+
+        console.error(
+            "Toolbox não encontrada:",
+            nomeToolbox
+        );
+
+        return;
+    }
+
+    workspace.updateToolbox(
+        toolbox
+    );
+}
+
+async function carregarReferencia(nomeArquivo) {
+
+    const resposta =
+        await fetch(
+            "referencias/" +
+            nomeArquivo
+        );
+
+    const jsonReferencia = await resposta.json();
+    const refWorkspace = new Blockly.Workspace();
+
+    Blockly.serialization.workspaces.load(jsonReferencia, refWorkspace);
+    Blockly.JavaScript.init(refWorkspace);
+    const codigo = Blockly.JavaScript.workspaceToCode(refWorkspace);
+
+    desenharReferencia(codigo);
+}
+
+function desenharReferencia(codigo) {
+
+    drawGrid(canvasRef, ctxRef);
+    resetCanva(ref, canvasRef);
+
+    window.AUX = ref;
+    eval(codigo);
+}
+
+window.onload = () => {
+    drawGrid(canvasUser, ctxUser);
+    drawGrid(canvasRef, ctxRef);
+    carregarFaseDoStorage();
+    drawPointer(user);
+};
+
+/* -----------------------
+   5. EXECUTAR O CÓDIGO
+--------------------------*/
+
+function runCode() {
+    desenhoInvalido = false;
+    drawGrid(canvasUser, ctxUser);  // desenha a matriz ampliada
+    resetCanva(user, canvasUser);
+
+    let code = Blockly.JavaScript.workspaceToCode(workspace);
+    try {
+        window.AUX = user;
+        eval(code);
+        drawPointer(user);
+        codigoExecutado = true;
+
+        if (desenhoInvalido) {
+            btnCheck.disabled = true;
+            btnSave.disabled = true;
+            alert(
+                "O desenho saiu da área permitida do quadro."
+            );
+            return;
+        }
+
+        btnCheck.disabled = false;
+        btnSave.disabled = false;
+
+    } catch (e) {
+        btnCheck.disabled = true;
+        btnSave.disabled = true;
+
+        alert("Erro ao executar: " + e);
+    }
+
+
+}
+
+function enviarResposta() {
+
+    if(!codigoExecutado) {
+        alert("Execute os blocos antes de enviar a resposta.");
+        return;
+    }
+
+    if(compareEdges()) { 
+        const percentual =calcularPrecisao();
+        abrirResultado(percentual);
+    }
+    else { 
+        const percentual =calcularPrecisao();
+        abrirResultado(percentual);
+
+        btnCheck.disabled = true;
+    }
+}
+
+function abrirResultado(percentual) {
+
+    const title =
+        document.getElementById(
+            "resultTitle"
+        );
+
+    const msg =
+        document.getElementById(
+            "resultMessage"
+        );
+
+    const percent =
+        document.getElementById(
+            "resultPercent"
+        );
+
+    const btnNext =document.getElementById("btnNextPhase");
+    if (
+        fase.proximaFase
+    ) {
+        btnNext.style.display =
+            "block";
+    }
+    else {
+        btnNext.style.display =
+            "none";
+    }
+        
+    const btnSelect =
+    document.getElementById(
+        "btnSelectPhase"
+    );
+        
+    if(percentual >= 100){
+
+        title.textContent =
+            "Fase Concluída!";
+
+        msg.textContent =
+            "Você reproduziu o desenho corretamente.";
+
+        percent.textContent =
+            "100%";
+
+        percent.style.color =
+            "green";
+
+        btnNext.disabled = false;
+    }
+    else{
+
+        title.textContent =
+            "Resultado";
+
+        msg.textContent =
+            "Seu desenho ainda não corresponde ao modelo.";
+
+        percent.textContent =
+            percentual + "%";
+
+        percent.style.color =
+            "#d97706";
+
+        btnNext.disabled = true;
+    }
+
+    document.getElementById(
+        "resultModal"
+    ).style.display = "flex";
+}
+
+btnContinue.onclick = () => {
+    resultModal.style.display = "none";
+};
+
+function calcularPrecisao() {
+
+    let corretas = 0;
+
+    let total = ref.edges.size;
+
+    for(const edge of ref.edges){
+
+        if(
+            user.edges.has(edge)
+        ){
+            corretas++;
+        }
+    }
+
+    return Math.round(
+        (corretas / total) * 100
+    );
+}
+
+btnNextPhase.onclick = async () => {
+
+    if (!fase.proximaFase) {
+        alert("Esta é a última fase.");
+        return;
+    }
+
+    const proxima = FASES[fase.proximaFase];
+
+    localStorage.setItem(
+        "faseAtual",
+        JSON.stringify(proxima)
+    );
+
+    location.reload();
+    
+};
+
+</script>
+
+</body>
+</html>

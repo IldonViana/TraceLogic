@@ -1,0 +1,67 @@
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #f5f5f5;
+}
+
+.layout {
+    width: 100%;
+    display: flex;
+
+    flex-direction: column;
+    align-items: center;
+
+    gap: 15px;
+    padding: 20px;
+}
+
+#canvasZone {
+    display: flex;
+    justify-content: center;
+
+    gap: 40px;
+    width: 100%;
+}
+
+.canvasCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.tituloCanvas {
+    width: 400px;
+
+    text-align: center;
+    font-weight: bold;
+    font-size: 18px;
+
+    padding: 10px;
+    margin-bottom: 5px;
+
+    border: 3px outset black;
+    border-radius: 8px;
+    background: white;
+}
+
+canvas {
+    border: 3px outset white;
+    background: white;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: center;
+
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+#blocklyDiv {
+    width: min(1200px, 95vw);
+    height: 480px;
+
+    border: 3px outset black;
+    background: white;
+}
+

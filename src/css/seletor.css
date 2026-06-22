@@ -1,0 +1,86 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    display: flex;
+
+    justify-content: center;
+    padding-top: 40px;
+}
+
+.container {
+    width: min(700px, 90vw);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#titulo {
+    background: white;
+    border: 5px outset black;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: context-menu;
+    
+    display: flex;
+    flex-direction: row;
+    gap: 60px;
+}
+
+#titulo h1 {
+    margin: 0;
+}
+
+#titulo p {
+    color: black;
+    margin-top: 10px;
+}
+
+#listaFases {
+    display: flex;
+
+    flex-direction: column;
+    gap: 12px;
+}
+
+#listaFases button {
+    padding: 18px;
+    font-size: 18px;
+    text-align: left;
+
+    border: 5px outset #00af;
+    border-radius: 10px;
+
+    background: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#listaFases button:hover {
+
+    transform: translateY(-2px);
+    background: #00a1;
+}
+
+
+#tutorialContainer {
+    display: flex;
+    justify-content: center;
+}
+
+#btnTutorialGeral {
+    width: 100px;
+    padding: 15px;
+    font-size: 18px;
+
+    border: 5px outset #0a0;
+    border-radius: 10px;
+
+    background: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#btnTutorialGeral:hover {
+    background: #e8f5e9;
+    transform: translateY(-2px);
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>TraceLogic – Fases</title>
+    <link rel="icon" type="image/png" href="assets/icons/tracelogic.png">
+
+    <link rel="stylesheet" href="./css/seletor.css">
+    <link rel="stylesheet" href="./css/tutorial.css">
+
+    <script src="js/tutorial/tutorialPages.js"></script>
+    <script src="js/tutorial/tutorial.js"></script>
+    <script src="./js/fases.js"></script>
+
+
+</head>
+<body>
+
+    <div class="container">
+
+        <div id="titulo">
+            <div>
+                <h1>Selecione uma Fase</h1>
+                <p>
+                    Aprenda lógica de programação
+                    construindo desenhos com blocos.
+                </p>
+            </div>
+            
+            <div id="tutorialContainer">
+                <button id="btnTutorialGeral" onclick="Tutorial.reabrir();">
+                    <img src="assets/icons/help.png" width="50px" height="50px">
+                </button>
+            </div>
+        </div>
+
+
+        <div id="listaFases">
+            <button onclick="abrirFase('1')">
+                Fase 1 - Introdução: Move and Draw
+            </button>
+
+            <button onclick="abrirFase('2')">
+                Fase 2 - Introdução ao Bloco FOR: Repetindo blocos
+            </button>
+
+            <button onclick="abrirFase('3')">
+                Fase 3 - Criando desfalques
+            </button>
+            
+            <button onclick="abrirFase('4')">
+                Fase 4 - Bloco FOR aprofundado: Iteração
+            </button>
+            
+            <button onclick="abrirFase('5')">
+                Fase 5 - Bloco FOR aprofundado: Passo
+            </button>
+
+            <button onclick="abrirFase('6')">
+                Fase 6 - Desafio: Criando uma Espiral
+            </button>
+
+            
+        </div>
+
+    </div>
+
+
+    <div id="tutorialModal" class="modal">
+
+        <div class="modal-content">
+            <button id="btnCloseTutorial">
+                ✖
+            </button>
+
+            <div id="tutorialPage"></div>
+
+            <div class="tutorial-nav">
+
+                <button id="btnPrevTutorial">
+                    ◀ Anterior
+                </button>
+                
+                <span id="tutorialCounter"></span>
+
+                <button id="btnNextTutorial">
+                    Próximo ▶
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+<script>
+
+function abrirFase(idFase) {
+
+    const fase = FASES[idFase];
+
+    if (!fase) {
+        alert("Fase não encontrada.");
+        return;
+    }
+
+    localStorage.setItem(
+        "faseAtual",
+        JSON.stringify(fase)
+    );
+
+    location.href = "jogo.html";
+}
+
+window.onload = () => {
+    Tutorial.abrir(0, 2)
+};
+
+</script>
+
+</body>
+</html> 

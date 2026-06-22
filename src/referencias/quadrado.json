@@ -1,0 +1,53 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "draw_on",
+        "id": "DkoX/!K+#.E.;3K1H-vX",
+        "x": 50,
+        "y": 27,
+        "next": {
+          "block": {
+            "type": "move",
+            "id": "J3WS/Q_VmhXB`?It:}*1",
+            "fields": {
+              "STEPS": "3",
+              "DIR": "RIGHT"
+            },
+            "next": {
+              "block": {
+                "type": "move",
+                "id": "9ALWw@giLDVu6L5r+YDf",
+                "fields": {
+                  "STEPS": "3",
+                  "DIR": "UP"
+                },
+                "next": {
+                  "block": {
+                    "type": "move",
+                    "id": ",~/TC9K8bzDuEsOE[e@H",
+                    "fields": {
+                      "STEPS": "3",
+                      "DIR": "LEFT"
+                    },
+                    "next": {
+                      "block": {
+                        "type": "move",
+                        "id": "O6%H-1Dq2JYd:`W$/~z{",
+                        "fields": {
+                          "STEPS": "3",
+                          "DIR": "DOWN"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

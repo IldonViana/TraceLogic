@@ -1,0 +1,23 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "draw_on",
+        "id": "-CL_=IHaA!dd/ii(bWs9",
+        "x": 38,
+        "y": 31,
+        "next": {
+          "block": {
+            "type": "move",
+            "id": "boz%w}-H(w}9jrwy/wA/",
+            "fields": {
+              "STEPS": "3",
+              "DIR": "RIGHT"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
